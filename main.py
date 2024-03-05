@@ -6,12 +6,12 @@ import librosa
 import numpy as np
 from scipy.signal import butter, lfilter
 import soundfile as sf
-import tensorflow as tf
 import io
 import requests
+import tflite_runtime.interpreter as tflite
 
 app = FastAPI()
-model = tf.saved_model.load("model")
+model = tflite.Interpreter(model_path='model.tflite', num_threads=4)
 
 def butter_bandpass(lowcut, highcut, fs, order=5):
     return butter(order, [lowcut, highcut], fs=fs, btype='band')
@@ -68,10 +68,10 @@ def preprocess_audio(x):
     desired_length = 9922
     if x.shape[0] < desired_length:
         padding = desired_length - x.shape[0]
-        x = tf.pad(x, paddings=[[0, padding]], mode='CONSTANT')
+        x = np.pad(x, pad_width=((0, padding)), mode='constant')
     elif x.shape[0] > desired_length:
         x = x[:desired_length]
-    x = tf.reshape(x, shape=(1, -1))
+    x = np.reshape(x, newshape=(1, -1))
     return x
 
 @app.get('/', response_class=PlainTextResponse)
@@ -80,10 +80,15 @@ async def uwu(url, id=None):
 
     answer = []
     for audio in Y:
-        x = tf.convert_to_tensor(audio, dtype=tf.float32)
+        x = np.asarray(audio, dtype=np.float32)
         x = preprocess_audio(x)
-        pred = model(x)
-        answer.append(pred['class_ids'].numpy()[0])
+        input_details = model.get_input_details()
+        output_details = model.get_output_details()
+        model.allocate_tensors()
+        model.set_tensor(input_details[0]['index'], x)
+        model.invoke()
+        prediction = model.get_tensor(output_details[0]['index'])
+        answer.append(np.argmax(prediction[0]))
     
     answer = [str(a) for a in answer if a != 10]
     answer_string = ''.join(answer)
