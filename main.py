@@ -1,19 +1,17 @@
 from time import time
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import PlainTextResponse
-import tflite_runtime.interpreter as tflite
-import numpy as np
-import requests
 import noisereduce as nr
 import librosa
-import librosa.display
+import numpy as np
 from scipy.signal import butter, lfilter
 import soundfile as sf
 import tensorflow as tf
 import io
+import requests
 
 app = FastAPI()
-model = tflite.Interpreter(model_path='model.tflite', num_threads=4)
+model = tf.saved_model.load("model")
 
 def butter_bandpass(lowcut, highcut, fs, order=5):
     return butter(order, [lowcut, highcut], fs=fs, btype='band')
