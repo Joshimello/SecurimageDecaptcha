@@ -9,6 +9,7 @@ import soundfile as sf
 import io
 import requests
 import tflite_runtime.interpreter as tflite
+import tensorflow as tf
 
 app = FastAPI()
 model = tflite.Interpreter(model_path='model.tflite', num_threads=4)
@@ -74,6 +75,13 @@ def preprocess_audio(x):
     x = np.reshape(x, newshape=(1, -1))
     return x
 
+def get_spectrogram(waveform):
+    spectrogram = tf.signal.stft(
+        waveform, frame_length=255, frame_step=128)
+    spectrogram = tf.abs(spectrogram)
+    spectrogram = spectrogram[..., tf.newaxis]
+    return spectrogram
+
 @app.get('/', response_class=PlainTextResponse)
 async def uwu(url, id=None):
     Y, sr, _ = separate_audio_url(url, {'PHPSESSID': id})
@@ -82,6 +90,7 @@ async def uwu(url, id=None):
     for audio in Y:
         x = np.asarray(audio, dtype=np.float32)
         x = preprocess_audio(x)
+        x = get_spectrogram(x)
         input_details = model.get_input_details()
         output_details = model.get_output_details()
         model.allocate_tensors()
