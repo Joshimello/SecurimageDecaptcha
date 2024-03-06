@@ -2,6 +2,10 @@
 
 Solving the Securimage captcha library by audio recognition using convnets via tensorflow
 
+> [!TIP]
+> This project was made for <a href="http://nthumods.com" target="_blank">NTHUMods</a>!  
+> Go check it out! It's <a href="https://github.com/nthumodifications/courseweb" target="_blank">open source</a> too!
+
 ## Installation (API)
 
 To run the recognition API
